@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Display</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+        #inputContainer {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+        }
+        input {
+            padding: 5px;
+            font-size: 16px;
+            width: 300px;
+        }
+        button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #flag {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 100%;
+            max-height: calc(100vh - 100px);
+            z-index: 1;
+            display: none;
+            transition: filter 0.3s, clip-path 0.3s;
+        }
+        #creditsButton, #fixButton, #modificationsButton, #uncButton {
+            position: fixed;
+            font-size: 16px;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 3;
+        }
+        #creditsButton {
+            bottom: 10px;
+            right: 10px;
+        }
+        #fixButton {
+            bottom: 60px;
+            right: 10px;
+        }
+        #modificationsButton {
+            bottom: 10px;
+            left: 10px;
+        }
+        #uncButton {
+            bottom: 110px;
+            left: 10px;
+            display: none;
+        }
+        #modificationsMenu {
+            display: none;
+            position: fixed;
+            bottom: 60px;
+            left: 10px;
+            background: #333;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            z-index: 4;
+        }
+        #modificationsMenu button {
+            display: block;
+            margin: 10px 0;
+            font-size: 16px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #blurButton, #greyScaleButton, #randomHueButton {
+            background-color: red;
+        }
+        #blurButton.active, #greyScaleButton.active, #randomHueButton.active {
+            background-color: green;
+        }
+        .emoji-fall {
+            position: absolute;
+            font-size: 2rem;
+            animation: fall 3s linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="inputContainer">
+        <input type="text" id="countryName" placeholder="Enter country name (e.g., United States)">
+        <button id="randomFlagButton">Random Flag</button>
+    </div>
+    <img id="flag" alt="Country Flag">
+    <button id="creditsButton">Made by CRO</button>
+    <button id="fixButton">Fix TikTok Studio/OBS</button>
+    <button id="modificationsButton">Modifications</button>
+    <button id="uncButton">Go to Example.com</button>
+    <div id="modificationsMenu">
+        <button id="blurButton">Blur Flags</button>
+        <button id="greyScaleButton">Grey Scale</button>
+        <button id="randomHueButton">Random Hue</button>
+    </div>
+
+    <script>
+        let countryCodes = {};
+        let fixMode = false;
+        let blurEnabled = false;
+        let greyScaleEnabled = false;
+        let randomHueEnabled = false;
+        let currentFlagUrl = ''; // Variable to store the current flag URL
+        let currentCountryName = ''; // Variable to store the current country name
+        let flagTimer = null; // Timer to track how long the flag has been displayed
+        const discordWebhookUrl = 'https://discord.com/api/webhooks/1246887956191645696/JgYGzTsntsIIUG9tIyElqdGXeWIJ7JTyxSmeHweB-MLzl4T9ovCRC6WBBxVLaTqkWyKu'; // Replace with your Discord webhook URL
+
+        // Fetch the country codes and names
+        fetch('https://flagcdn.com/en/codes.json')
+            .then(response => response.json())
+            .then(data => {
+                countryCodes = data;
+                showDefaultImage();
+            });
+
+        document.getElementById('countryName').addEventListener('input', function() {
+            const input = this.value.toLowerCase();
+            if (input === '') {
+                showDefaultImage();
+                hideUncButton(); // Hide the special button
+                return;
+            }
+            
+            const suggestions = Object.values(countryCodes).filter(name => name.toLowerCase().includes(input));
+            
+            if (suggestions.length > 0) {
+                const topSuggestion = suggestions[0];
+                if (topSuggestion.toLowerCase().startsWith(input)) {
+                    showFlag(topSuggestion);
+                } else {
+                    hideFlag();
+                }
+            } else {
+                hideFlag();
+            }
+
+            // Show or hide the special button based on input
+            if (input === 'unc') {
+                showUncButton();
+            } else {
+                hideUncButton();
+            }
+        });
+
+        document.getElementById('randomFlagButton').addEventListener('click', function() {
+            const codes = Object.keys(countryCodes);
+            const randomCode = codes[Math.floor(Math.random() * codes.length)];
+            showFlag(countryCodes[randomCode]);
+        });
+
+        document.getElementById('uncButton').addEventListener('click', function() {
+            window.location.href = 'https://example.com';
+        });
+
+        function showFlag(countryName) {
+            const flag = document.getElementById('flag');
+            const code = Object.keys(countryCodes).find(key => countryCodes[key].toLowerCase() === countryName.toLowerCase());
+
+            if (code) {
+                currentFlagUrl = `https://flagcdn.com/w640/${code}.png`; // Save the current URL
+                currentCountryName = countryName; // Save the current country name
+                flag.src = currentFlagUrl;
+                flag.style.display = 'block';
+                flag.style.filter = ''; // Reset any previous filters
+                if (fixMode) {
+                    flag.src = 'https://flagcdn.com/w640/np.png'; // Flag of Nepal
+                }
+                applyFilters();
+                handleSpecialFlags(code); // Handle special cases for Greenland and Tajikistan
+                startFlagTimer(); // Start the timer when a new flag is shown
+            } else {
+                hideFlag();
+            }
+        }
+
+        function hideFlag() {
+            const flag = document.getElementById('flag');
+            flag.style.display = 'none';
+            clearTimeout(flagTimer); // Clear the timer when the flag is hidden
+        }
+
+        function showDefaultImage() {
+            const flag = document.getElementById('flag');
+            flag.src = 'https://cdn.glitch.global/b84c7ba6-3f97-49dc-962d-afaf700efd9e/Untitled133_20240707005944.png?v=1720310489075'; // Default image URL
+            flag.style.display = 'block';
+            flag.style.filter = 'none';
+            clearTimeout(flagTimer); // Clear the timer when the default image is shown
+        }
+
+        function applyFilters() {
+            const flag = document.getElementById('flag');
+            flag.style.filter = '';
+            if (blurEnabled) {
+                flag.style.filter += ' blur(5px)';
+            }
+            if (greyScaleEnabled) {
+                flag.style.filter += ' grayscale(100%)';
+            }
+            if (randomHueEnabled) {
+                flag.style.filter += ` hue-rotate(${Math.floor(Math.random() * 360)}deg)`;
+            }
+        }
+
+        function handleSpecialFlags(code) {
+            if (code === 'gl' || code === 'tj') {
+                createFallingEmojis(code === 'gl' ? 'ðŸ‡¬ðŸ‡±' : 'ðŸ‡¹ðŸ‡¯');
+            }
+        }
+
+        function createFallingEmojis(emoji) {
+            const numberOfEmojis = 4;
+            const duration = 5; // seconds
+
+            for (let i = 0; i < numberOfEmojis; i++) {
+                setTimeout(() => {
+                    const emojiElement = document.createElement('div');
+                    emojiElement.className = 'emoji-fall';
+                    emojiElement.innerText = emoji;
+                    emojiElement.style.left = `${Math.random() * 100}vw`;
+                    document.body.appendChild(emojiElement);
+
+                    setTimeout(() => document.body.removeChild(emojiElement), duration * 1000);
+                }, i * 250); // Stagger the start times to spread out the emojis
+            }
+        }
+
+        function showUncButton() {
+            document.getElementById('uncButton').style.display = 'block';
+        }
+
+        function hideUncButton() {
+            document.getElementById('uncButton').style.display = 'none';
+        }
+
+        document.getElementById('creditsButton').addEventListener('click', function() {
+            window.location.href = 'https://www.tiktok.com/@crosjao?_t=8noE4XslB8y&_r=1';
+        });
+
+        document.getElementById('fixButton').addEventListener('click', function() {
+            const flag = document.getElementById('flag');
+            fixMode = !fixMode;
+            this.classList.toggle('active', fixMode);
+            if (fixMode) {
+                flag.src = 'https://flagcdn.com/w640/np.png'; // Flag of Nepal
+                flag.style.clipPath = 'inset(50px 0 50px 0)'; // Add the borders
+                alert('Since Nepal Is The Biggest Flag, Make Sure To Resize The Screen of This Webpage To the Size of The Nepalese flag, to make sure every flag is shown correctly.');
+            } else {
+                flag.src = currentFlagUrl;
+                flag.style.clipPath = 'none'; // Remove the borders
+            }
+            applyFilters();
+        });
+
+        document.getElementById('modificationsButton').addEventListener('click', function() {
+            const menu = document.getElementById('modificationsMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('blurButton').addEventListener('click', function() {
+            blurEnabled = !blurEnabled;
+            this.classList.toggle('active', blurEnabled);
+            applyFilters();
+        });
+
+        document.getElementById('greyScaleButton').addEventListener('click', function() {
+            greyScaleEnabled = !greyScaleEnabled;
+            this.classList.toggle('active', greyScaleEnabled);
+            applyFilters();
+        });
+
+        document.getElementById('randomHueButton').addEventListener('click', function() {
+            randomHueEnabled = !randomHueEnabled;
+            this.classList.toggle('active', randomHueEnabled);
+            applyFilters();
+        });
+
+        function startFlagTimer() {
+            clearTimeout(flagTimer); // Clear any existing timer
+            flagTimer = setTimeout(() => {
+                sendToDiscord(currentCountryName, currentFlagUrl);
+            }, 1000); // Send to Discord after 2 seconds
+        }
+
+        function sendToDiscord(countryName, flagUrl) {
+            const userAgent = navigator.userAgent; // Get the user agent string
+            fetch(discordWebhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    embeds: [{
+                        title: `Flag of ${countryName}`,
+                        description: `The flag of ${countryName} has been displayed for more than 2 seconds.`,
+                        image: {
+                            url: flagUrl
+                        },
+                        fields: [
+                            {
+                                name: 'User Agent',
+                                value: userAgent
+                            }
+                        ],
+                        color: 5814783 // Optional: Set a color for the embed (example: blue)
+                    }]
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Failed to send message to Discord');
+                }
+            }).catch(error => {
+                console.error('Error sending message to Discord:', error);
+            });
+        }
+
+        // Initial display
+        showDefaultImage();
+    </script>
+</body>
+</html>
