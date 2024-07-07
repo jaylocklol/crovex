@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music and Flying Images</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars from appearing */
+            background-color: black; /* Set background color to black */
+            color: white; /* Set text color to white */
+            font-family: Arial, sans-serif; /* Set font */
+        }
+
+        .audio-control {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .image-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none; /* Prevent interactions with the images */
+        }
+
+        .flying-image {
+            position: absolute;
+            width: 50px; /* Resize image as needed */
+            height: auto;
+            /* Default animation - will be overwritten by JavaScript */
+        }
+
+        .background-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem; /* Adjust size as needed */
+            font-weight: bold;
+            text-align: center;
+            z-index: 0; /* Behind the images */
+            pointer-events: none; /* Prevent interactions with the text */
+        }
+    </style>
+</head>
+<body>
+    <audio id="background-music" src="https://cdn.glitch.global/b84c7ba6-3f97-49dc-962d-afaf700efd9e/Gloria%20Gaynor%20-%20I%20Will%20Survive%20-%20GloriaGaynorVEVO.mp3?v=1720313433193"></audio>
+    
+    <div class="audio-control" id="audio-control">Play Audio</div>
+
+    <div class="image-container" id="image-container">
+        <!-- Images will be added dynamically with JavaScript -->
+    </div>
+
+    <!-- Background text -->
+    <div class="background-text">UNC FTW</div>
+
+    <script>
+        const audio = document.getElementById('background-music');
+        const control = document.getElementById('audio-control');
+        const container = document.getElementById('image-container');
+
+        function toggleAudio() {
+            if (audio.paused) {
+                audio.play();
+                control.textContent = 'Pause Audio';
+            } else {
+                audio.pause();
+                control.textContent = 'Play Audio';
+            }
+        }
+
+        control.addEventListener('click', toggleAudio);
+
+        // Function to create and animate images
+        function createFlyingImage() {
+            const image = document.createElement('img');
+            image.src = 'https://cdn.glitch.global/b84c7ba6-3f97-49dc-962d-afaf700efd9e/images__10_-removebg-preview.png?v=1720313470621';
+            image.alt = 'Flying Image';
+            image.className = 'flying-image';
+
+            // Set random Y position and speed
+            const startY = Math.random(); // Between 0 and 1
+            const duration = Math.random() * 0.5 + 0.5; // Duration between 0.5s and 1s
+
+            image.style.top = `${startY * 100}vh`;
+            image.style.animation = `fly ${duration}s linear infinite`;
+
+            container.appendChild(image);
+        }
+
+        // Number of images to create
+        const numberOfImages = 30; // Change this number to adjust the number of images
+
+        // Create multiple images
+        for (let i = 0; i < numberOfImages; i++) {
+            createFlyingImage();
+        }
+    </script>
+    <style>
+        /* Define keyframes for flying effect */
+        @keyframes fly {
+            0% {
+                transform: translateX(-100px);
+            }
+            100% {
+                transform: translateX(100vw);
+            }
+        }
+    </style>
+</body>
+</html>
