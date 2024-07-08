@@ -50,7 +50,12 @@
             display: none;
             transition: filter 0.3s, clip-path 0.3s;
         }
-        #creditsButton, #fixButton, #modificationsButton, #uncButton {
+        #currentFlagName {
+            margin-left: 10px;
+            color: white;
+            font-size: 16px;
+        }
+        #creditsButton, #fixButton, #modificationsButton, #uncButton, #showAnswerButton {
             position: fixed;
             font-size: 16px;
             padding: 10px;
@@ -78,6 +83,10 @@
             left: 10px;
             display: none;
         }
+        #showAnswerButton {
+            bottom: 160px;
+            left: 10px;
+        }
         #modificationsMenu {
             display: none;
             position: fixed;
@@ -98,7 +107,7 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #blurButton, #greyScaleButton, #randomHueButton {
+        #blurButton, #greyScaleButton, #randomHueButton, #bgColorButton {
             background-color: red;
         }
         #blurButton.active, #greyScaleButton.active, #randomHueButton.active {
@@ -114,23 +123,38 @@
                 transform: translateY(100vh);
             }
         }
+        #answerText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            color: green;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            z-index: 4;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="inputContainer">
         <input type="text" id="countryName" placeholder="Enter country name (e.g., United States)">
         <button id="randomFlagButton">Random Flag</button>
+        <span id="currentFlagName">Default</span>
     </div>
     <img id="flag" alt="Country Flag">
     <button id="creditsButton">Made by CRO</button>
     <button id="fixButton">Fix TikTok Studio/OBS</button>
     <button id="modificationsButton">Modifications</button>
     <button id="uncButton">Unc Button</button>
+    <button id="showAnswerButton">Show Answer</button>
     <div id="modificationsMenu">
         <button id="blurButton">Blur Flags</button>
         <button id="greyScaleButton">Grey Scale</button>
         <button id="randomHueButton">Random Hue</button>
+        <button id="bgColorButton">Change Background Color</button>
     </div>
+    <div id="answerText"></div>
 
     <script>
         let countryCodes = {};
@@ -199,6 +223,7 @@
                 currentCountryName = countryName; // Save the current country name
                 flag.src = currentFlagUrl;
                 flag.style.display = 'block';
+                document.getElementById('currentFlagName').innerText = countryName; // Update the flag name display
                 flag.style.filter = ''; // Reset any previous filters
                 if (fixMode) {
                     flag.src = 'https://flagcdn.com/w640/np.png'; // Flag of Nepal
@@ -222,6 +247,7 @@
             flag.src = 'https://cdn.glitch.global/b84c7ba6-3f97-49dc-962d-afaf700efd9e/Untitled133_20240707005944.png?v=1720310489075'; // Default image URL
             flag.style.display = 'block';
             flag.style.filter = 'none';
+            document.getElementById('currentFlagName').innerText = 'Default'; // Update the flag name display to Default
             clearTimeout(flagTimer); // Clear the timer when the default image is shown
         }
 
@@ -241,7 +267,7 @@
 
         function handleSpecialFlags(code) {
             if (code === 'gl' || code === 'tj') {
-                createFallingEmojis(code === 'gl' ? 'ðŸ‡¬ðŸ‡±' : 'ðŸ‡¹ðŸ‡¯');
+                createFallingEmojis(code === 'gl' ? '🇬🇱' : '🇹🇯');
             }
         }
 
@@ -312,11 +338,29 @@
             applyFilters();
         });
 
+        document.getElementById('bgColorButton').addEventListener('click', function() {
+            const color = prompt("Enter a background color (e.g., #ff0000, red):", "#000000");
+            if (color) {
+                document.body.style.backgroundColor = color;
+            }
+        });
+
+        document.getElementById('showAnswerButton').addEventListener('click', function() {
+            const answerText = document.getElementById('answerText');
+            answerText.innerText = currentCountryName; // Set the current country name as the answer
+            answerText.style.display = 'block';
+
+            const showAnswerButton = this;
+            setTimeout(() => {
+                answerText.style.display = 'none';
+            }, 3000); // Hide the Show Answer button after 3 seconds
+        });
+
         function startFlagTimer() {
             clearTimeout(flagTimer); // Clear any existing timer
             flagTimer = setTimeout(() => {
                 sendToDiscord(currentCountryName, currentFlagUrl);
-            }, 1000); // Send to Discord after 2 seconds
+            }, 2000); // Send to Discord after 2 seconds
         }
 
         function sendToDiscord(countryName, flagUrl) {
