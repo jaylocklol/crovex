@@ -107,10 +107,10 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #blurButton, #greyScaleButton, #randomHueButton, #bgColorButton {
+        #blurButton, #greyScaleButton, #randomHueButton, #bgColorButton, #rainbowButton {
             background-color: red;
         }
-        #blurButton.active, #greyScaleButton.active, #randomHueButton.active {
+        #blurButton.active, #greyScaleButton.active, #randomHueButton.active, #rainbowButton.active {
             background-color: green;
         }
         .emoji-fall {
@@ -152,6 +152,7 @@
         <button id="blurButton">Blur Flags</button>
         <button id="greyScaleButton">Grey Scale</button>
         <button id="randomHueButton">Random Hue</button>
+        <button id="rainbowButton">Rainbow Effect</button>
         <button id="bgColorButton">Change Background Color</button>
     </div>
     <div id="answerText"></div>
@@ -162,9 +163,11 @@
         let blurEnabled = false;
         let greyScaleEnabled = false;
         let randomHueEnabled = false;
+        let rainbowEnabled = false; // Variable to track if rainbow effect is enabled
         let currentFlagUrl = ''; // Variable to store the current flag URL
         let currentCountryName = ''; // Variable to store the current country name
         let flagTimer = null; // Timer to track how long the flag has been displayed
+        let rainbowTimer = null; // Timer for the rainbow effect
         const discordWebhookUrl = 'https://discord.com/api/webhooks/1246887956191645696/JgYGzTsntsIIUG9tIyElqdGXeWIJ7JTyxSmeHweB-MLzl4T9ovCRC6WBBxVLaTqkWyKu'; // Replace with your Discord webhook URL
 
         // Fetch the country codes and names
@@ -344,6 +347,27 @@
                 document.body.style.backgroundColor = color;
             }
         });
+
+        document.getElementById('rainbowButton').addEventListener('click', function() {
+            rainbowEnabled = !rainbowEnabled;
+            this.classList.toggle('active', rainbowEnabled);
+            if (rainbowEnabled) {
+                startRainbowEffect();
+            } else {
+                clearInterval(rainbowTimer);
+                document.getElementById('flag').style.filter = ''; // Reset filter
+                applyFilters(); // Reapply other filters if any
+            }
+        });
+
+        function startRainbowEffect() {
+            let hue = 0;
+            const flag = document.getElementById('flag');
+            rainbowTimer = setInterval(() => {
+                flag.style.filter = `hue-rotate(${hue}deg)`;
+                hue = (hue + 1) % 360;
+            }, 1); // Adjust the interval for a smooth effect
+        }
 
         document.getElementById('showAnswerButton').addEventListener('click', function() {
             const answerText = document.getElementById('answerText');
