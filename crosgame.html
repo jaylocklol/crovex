@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Country Game</title>
+    <style>
+        /* General styles for dark mode */
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, p {
+            color: #e0e0e0;
+        }
+
+        input, button {
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input::placeholder {
+            color: #888;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.7); /* Darker background with opacity */
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #555;
+            width: 80%; /* Could be more or less, depending on screen size */
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #888;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #e0e0e0;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>CRO's GAME</h1>
+    <p id="question">Let's start the game!</p>
+    <input type="text" id="guess" placeholder="Your guess here">
+    <button onclick="submitGuess()">Submit</button>
+    <p id="feedback"></p>
+    <p id="score">Score: <span id="scoreboard">0,0,0,0,0</span></p>
+    <button onclick="showScorePopup()">Show Score</button>
+
+    <!-- The Modal -->
+    <div id="scoreModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeScorePopup()">&times;</span>
+            <h2>Your Scores</h2>
+            <p id="scoreDetails">0,0,0,0,0</p>
+        </div>
+    </div>
+
+    <script>
+        const flagcdnURL = 'https://flagcdn.com/en/codes.json';
+        const restcountriesURL = 'https://restcountries.com/v3.1/alpha/';
+        let countryCodes = {};
+        let currentCountryCode = '';
+        let currentCountryData = {};
+        let step = 1;
+        let guesses = [0, 0, 0, 0, 0];
+
+        // Fetch the country codes
+        fetch(flagcdnURL)
+            .then(response => response.json())
+            .then(data => {
+                countryCodes = data;
+                startGame();
+            });
+
+        function startGame() {
+            step = 1;
+            currentCountryCode = getRandomCountryCode();
+            fetchCountryData(currentCountryCode);
+        }
+
+        function getRandomCountryCode() {
+            const keys = Object.keys(countryCodes);
+            return keys[Math.floor(Math.random() * keys.length)];
+        }
+
+        function fetchCountryData(code) {
+            fetch(restcountriesURL + code)
+                .then(response => response.json())
+                .then(data => {
+                    currentCountryData = data[0];
+                    giveHint();
+                });
+        }
+
+        function cleanCurrencyName(currencyName, countryName) {
+            const countryNameRegEx = new RegExp(countryName, 'i');
+            let cleanedName = currencyName.replace(countryNameRegEx, '').trim();
+
+            // Remove any single or double-letter words
+            cleanedName = cleanedName.split(' ').filter(word => word.length > 2).join(' ');
+
+            return cleanedName;
+        }
+
+        function giveHint() {
+            const questionElement = document.getElementById('question');
+            const countryName = currentCountryData.name.common;
+
+            switch (step) {
+                case 1:
+                    const currencyName = Object.values(currentCountryData.currencies)[0].name;
+                    questionElement.textContent = `Hint: The currency is ${cleanCurrencyName(currencyName, countryName)}`;
+                    break;
+                case 2:
+                    questionElement.textContent = `Hint: This country is ${currentCountryData.landlocked ? '' : 'not '}landlocked`;
+                    break;
+                case 3:
+                    questionElement.textContent = `Hint: The timezone is ${currentCountryData.timezones[0]} and the continent is ${currentCountryData.continents[0]}`;
+                    break;
+                case 4:
+                    questionElement.textContent = `Hint: The population is ${currentCountryData.population}`;
+                    break;
+                case 5:
+                    questionElement.innerHTML = `Hint: The flag is <br><img src="${currentCountryData.flags.svg}" alt="flag" width="100">`;
+                    break;
+            }
+        }
+
+        function submitGuess() {
+            const guessElement = document.getElementById('guess');
+            const feedbackElement = document.getElementById('feedback');
+            const guess = guessElement.value.trim().toLowerCase();
+            const correct = guess === currentCountryData.name.common.toLowerCase();
+
+            if (correct) {
+                feedbackElement.textContent = 'Correct!';
+                updateScore(step);
+                startGame();
+            } else {
+                feedbackElement.textContent = 'Wrong! Try again.';
+                if (step === 5) {
+                    updateScore(step);
+                    startGame();
+                } else {
+                    step++;
+                    giveHint();
+                }
+            }
+
+            guessElement.value = '';
+        }
+
+        function updateScore(steps) {
+            guesses[steps - 1]++;
+            document.cookie = `score=${guesses.join(',')}`;
+            updateScoreboard();
+        }
+
+        function updateScoreboard() {
+            const scoreboardElement = document.getElementById('scoreboard');
+            scoreboardElement.textContent = guesses.join(',');
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function loadScore() {
+            const score = getCookie('score');
+            if (score) {
+                guesses = score.split(',').map(Number);
+                updateScoreboard();
+            }
+        }
+
+        function showScorePopup() {
+            const modal = document.getElementById('scoreModal');
+            const scoreDetails = document.getElementById('scoreDetails');
+            scoreDetails.textContent = `1st Guess: ${guesses[0]} times\n2nd Guess: ${guesses[1]} times\n3rd Guess: ${guesses[2]} times\n4th Guess: ${guesses[3]} times\n5th Guess: ${guesses[4]} times`;
+            modal.style.display = 'block';
+        }
+
+        function closeScorePopup() {
+            const modal = document.getElementById('scoreModal');
+            modal.style.display = 'none';
+        }
+
+        window.onload = function() {
+            loadScore();
+        }
+
+        // Close the modal when clicking outside of the modal
+        window.onclick = function(event) {
+            const modal = document.getElementById('scoreModal');
+            if (event.target === modal) {
+                closeScorePopup();
+            }
+        }
+    </script>
+</body>
+</html>
