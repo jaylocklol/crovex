@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CROVEX | SECURITY CAMERA MAP</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 100%;
+        }
+        .leaflet-popup-content {
+            color: white;
+        }
+        .leaflet-popup-content-wrapper {
+            background-color: #333;
+        }
+        .popup-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/papaparse/papaparse.min.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the map
+            const map = L.map('map').setView([0, 0], 2);
+
+            // Add dark mode tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CartoDB',
+            }).addTo(map);
+
+            // Initialize marker cluster group
+            const markers = L.markerClusterGroup().addTo(map);
+
+            // Function to convert UNIX time to readable format
+            function unixToDate(unixTime) {
+                const date = new Date(unixTime * 1000);
+                return date.toLocaleString();
+            }
+
+            // Function to clean URL
+            function cleanUrl(url) {
+                return url.split('?')[0];
+            }
+
+            // Function to generate a slight offset
+            function getOffset(lat, lon) {
+                const offset = 0.001; // Change this value for more/less offset
+                return [
+                    lat + (Math.random() - 0.5) * offset,
+                    lon + (Math.random() - 0.5) * offset
+                ];
+            }
+
+            // Load CSV data
+            Papa.parse('https://blue-spiral-swoop.glitch.me/images.csv', {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    results.data.forEach(row => {
+                        if (row.LAT && row.LON && row['Image URL']) {
+                            // Apply slight random offset to coordinates
+                            const [offsetLat, offsetLon] = getOffset(parseFloat(row.LAT), parseFloat(row.LON));
+
+                            // Create a marker
+                            const marker = L.marker([offsetLat, offsetLon]);
+
+                            // Clean URL
+                            const cleanUrlString = cleanUrl(row['Image URL']);
+
+                            // Bind popup with information
+                            marker.bindPopup(`
+                                <b>Country:</b> ${row.COUNTRY}<br>
+                                <b>Scraped Time:</b> ${unixToDate(parseInt(row['UNIX TIME IT WAS SCRAPED']))}<br>
+                                <a href="${cleanUrlString}" target="_blank">
+                                    <img src="${cleanUrlString}" class="popup-image">
+                                </a>
+                            `);
+
+                            // Add marker to the cluster group
+                            markers.addLayer(marker);
+                        }
+                    });
+
+                    // Redraw clusters on zoom or move
+                    map.on('moveend', function() {
+                        markers.clearLayers();
+                        results.data.forEach(row => {
+                            if (row.LAT && row.LON && row['Image URL']) {
+                                // Apply slight random offset to coordinates
+                                const [offsetLat, offsetLon] = getOffset(parseFloat(row.LAT), parseFloat(row.LON));
+
+                                // Create a marker
+                                const marker = L.marker([offsetLat, offsetLon]);
+
+                                // Clean URL
+                                const cleanUrlString = cleanUrl(row['Image URL']);
+
+                                // Bind popup with information
+                                marker.bindPopup(`
+                                    <b>Country:</b> ${row.COUNTRY}<br>
+                                    <b>Scraped Time:</b> ${unixToDate(parseInt(row['UNIX TIME IT WAS SCRAPED']))}<br>
+                                    <a href="${cleanUrlString}" target="_blank">
+                                        <img src="${cleanUrlString}" class="popup-image">
+                                    </a>
+                                `);
+
+                                // Add marker to the cluster group if within bounds
+                                if (map.getBounds().contains([offsetLat, offsetLon])) {
+                                    markers.addLayer(marker);
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
